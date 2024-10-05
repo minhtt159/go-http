@@ -1,0 +1,1 @@
+Pass logging object around

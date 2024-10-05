@@ -5,30 +5,41 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/alecthomas/kingpin/v2"
+	"github.com/alecthomas/kong"
 )
 
-var (
-	app = kingpin.New(filepath.Base(os.Args[0]), "Simple HTTP Server")
+// NOTE: Learn more about Kong: https://github.com/alecthomas/kong/blob/master/_examples/shell/commandstring/main.go
+var CLI struct {
+	Serve struct {
+		Server string `arg:"" optional:"" help:"Listen Interface." default:"0.0.0.0"`
+		Port   string `arg:"" optional:"" help:"Listen Port." default:"8080"`
+		Path   string `arg:"" optional:"" help:"Listen Path." default:"/"`
+	} `cmd:"Start in server mode" default:"withargs"`
 
-	verbose = app.Flag("verbose", "Verbose level").Short('v').Bool()
-	server  = app.Flag("server", "Listen interface").Short('s').Default("0.0.0.0").IP()
-	port    = app.Flag("port", "Listen port").Short('p').Default("8080").String()
+	Get struct {
+		url string `arg:"" help:"URL to GET"`
+	} `cmd:"Get something"`
 
-	// Cmd: go-http serve
-	action = app.Command("serve", "Start in server mode").Default()
-	path   = action.Arg("path", "Listen path").Default("/").String()
-)
+	Logging struct {
+		Level string `enum:"debug,info,warn,error" default:"info"`
+		Type  string `enum:"file,console" default:"console"`
+	} `embed:"" prefix:"logging."`
+}
 
 func main() {
 	log.Printf("All Args: %s", os.Args)
-
-	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-	case action.FullCommand():
+	ctx := kong.Parse(&CLI,
+		kong.Name(filepath.Base(os.Args[0])),
+		kong.Description("Simple HTTP Server"),
+	)
+	switch ctx.Command() {
+	case "serve":
 		log.Println("Start in serve mode")
-		log.Printf("All flags: \nverbose: %t\nserver: %s\nport: %s\npath: %s\n",
-			*verbose, *server, *port, *path)
+		log.Printf("All flags: \nserver: %s\nport: %s\npath: %s\n",
+			CLI.Serve.Server, CLI.Serve.Port, CLI.Serve.Path)
+	case "get":
+		log.Println("GET request")
 	default:
-		log.Fatal("Action not valid")
+		panic(ctx.Command())
 	}
 }
