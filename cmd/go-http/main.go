@@ -27,11 +27,14 @@ var CLI struct {
 }
 
 func main() {
-	log.Printf("All Args: %s", os.Args)
 	ctx := kong.Parse(&CLI,
 		kong.Name(filepath.Base(os.Args[0])),
 		kong.Description("Simple HTTP Server"),
 	)
+
+	// log.Printf("All Args: %s", os.Args)
+	// log.Printf("Context: %s", CLI)
+
 	switch ctx.Command() {
 	case "serve":
 		log.Println("Start in serve mode")
