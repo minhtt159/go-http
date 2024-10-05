@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -9,18 +10,25 @@ import (
 )
 
 var (
-	verbose = kingpin.Flag("verbose", "Verbose level").Short('v').Bool()
-	server  = kingpin.Arg("server", "Listen interface").String()
-	port    = kingpin.Arg("port", "Listen port").String()
-	path    = kingpin.Arg("path", "Listen path").String()
+	app = kingpin.New(filepath.Base(os.Args[0]), "Simple HTTP Server")
+
+	verbose = app.Flag("verbose", "Verbose level").Short('v').Bool()
+	server  = app.Flag("server", "Listen interface").Short('s').Default("127.0.0.1").IP()
+	port    = app.Flag("port", "Listen port").Short('p').Default("8080").String()
+
+	action = app.Command("serve", "Start in server mode").Default()
+	path   = action.Arg("path", "Listen path").Default("/").String()
 )
 
 func main() {
-	app := kingpin.New(filepath.Base(os.Args[0]), "Simple HTTP Server").UsageWriter(os.Stdout)
-	// app.HelpFlag.Short('h')
+	fmt.Println("All Args", os.Args)
 
-	// Parse Command
-	parsedCmd := kingpin.MustParse(app.Parse(os.Args[1:]))
-
-	fmt.Println(parsedCmd)
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case action.FullCommand():
+		fmt.Println("Start in serve mode")
+		fmt.Printf("All flags: \nverbose: %t\nserver: %s\nport: %s\npath: %s\n",
+			*verbose, *server, *port, *path)
+	default:
+		log.Fatal("Action not valid")
+	}
 }
