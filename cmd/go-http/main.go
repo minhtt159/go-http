@@ -1,11 +1,13 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/alecthomas/kong"
+	"github.com/minhtt159/go-http/internal/logger"
 )
 
 // NOTE: Learn more about Kong: https://github.com/alecthomas/kong/blob/master/_examples/shell/commandstring/main.go
@@ -32,17 +34,34 @@ func main() {
 		kong.Description("Simple HTTP Server"),
 	)
 
-	// log.Printf("All Args: %s", os.Args)
-	// log.Printf("Context: %s", CLI)
+	// Initialize log handler
+	var logLevel slog.Level
+	err := logLevel.UnmarshalText([]byte(CLI.Logging.Level))
+	if err != nil {
+		fmt.Println("Unable to parge log level, default to Info")
+		logLevel = slog.LevelInfo
+	}
 
+	logHandler := logger.New(
+		&slog.HandlerOptions{Level: logLevel},
+		logger.WithDestinationWriter(os.Stdout), logger.WithColor(),
+	)
+	logger := slog.New(logHandler)
+
+	// Print context if DEBUG
+	logger.Debug(fmt.Sprintf("All Args: %s", os.Args))
+	logger.Debug(fmt.Sprintf("Context: %s", CLI))
+
+	// Start commands
 	switch ctx.Command() {
 	case "serve":
-		log.Println("Start in serve mode")
-		log.Printf("All flags: \nserver: %s\nport: %s\npath: %s\n",
-			CLI.Serve.Server, CLI.Serve.Port, CLI.Serve.Path)
+		logger.Info("Start in serve mode")
+		logger.Debug(fmt.Sprintf("All flags: \nserver: %s\nport: %s\npath: %s\n",
+			CLI.Serve.Server, CLI.Serve.Port, CLI.Serve.Path))
 	case "get":
-		log.Println("GET request")
+		logger.Info("GET request")
 	default:
+		logger.Error(fmt.Sprintf("Context: %s", CLI))
 		panic(ctx.Command())
 	}
 }
