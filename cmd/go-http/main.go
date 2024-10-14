@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -42,9 +43,20 @@ func main() {
 		logLevel = slog.LevelInfo
 	}
 
+	var logOutput io.Writer
+	if CLI.Logging.Type == "file" {
+		logOutput, err = os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Println("Unable to open log file, default to console")
+			logOutput = os.Stdout
+		}
+	} else {
+		logOutput = os.Stdout
+	}
+
 	logHandler := logger.New(
 		&slog.HandlerOptions{Level: logLevel},
-		logger.WithDestinationWriter(os.Stdout), logger.WithColor(),
+		logger.WithDestinationWriter(logOutput), logger.WithColor(),
 	)
 	logger := slog.New(logHandler)
 
